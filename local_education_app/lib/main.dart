@@ -1,0 +1,92 @@
+import 'dart:io';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:local_education_app/config/routes/router.dart';
+import 'package:local_education_app/provider/auth_provider.dart';
+import 'package:local_education_app/provider/course_provider.dart';
+import 'package:local_education_app/provider/lesson_provider.dart';
+import 'package:local_education_app/provider/slide_provider.dart';
+import 'package:local_education_app/provider/tour_provider.dart';
+import 'package:local_education_app/screens/login/login_screen.dart';
+import 'package:local_education_app/widgets/app_main_navigation.dart';
+import 'package:local_education_app/screens/exam/pages/intro_page.dart';
+import 'package:local_education_app/screens/exam/pages/select_page.dart';
+import 'package:provider/provider.dart';
+
+void main(List<String> args) async{
+  WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = MyHttpOverrides();
+    if(kIsWeb)
+    {
+      await Firebase.initializeApp(options:FirebaseOptions(
+    apiKey: "AIzaSyDLGFEExyTAq5CmYGBkiLN9URAfe_4cF-0", 
+    appId: "1:1015696124487:android:7d07439f2079bd18905f62", 
+    messagingSenderId: "1015696124487", 
+    projectId: "localedu-f7829"));
+    }
+    else{
+      await Firebase.initializeApp();
+    }
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => AuthProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => TourProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => CourseProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => LessonProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => SlideProivder(),
+        )
+      ],
+      child: const MyApp(),
+      
+    ),
+  );
+}
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: Colors.green,
+      ),
+      home: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          // TODO: Add ID check in loal storage;
+          final String? ID = auth.jwtID;
+          return ID == null || ID.isEmpty
+              ? const LoginScreen()
+              : const AppMainNav();
+        },
+      ),
+      onGenerateRoute: AppRouter.generateRoute,
+      routes: {
+            '/intropage': (context) => const IntroPage(),
+            '/selectpage': (context) => const SelectPage(),
+          },
+    );
+  }
+}
